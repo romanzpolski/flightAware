@@ -38,7 +38,6 @@
                         <option value="arrivals">Arrivals</option>
                         <option value="departures">Departures</option>
                     </select>
-                    <input type="hidden" name="pagination" value="0" />
                     <button type="submit" class="btn btn-success">Submit</button>
                 </form>
             </div>

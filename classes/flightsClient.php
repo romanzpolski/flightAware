@@ -66,7 +66,7 @@ class flightsClient
             'startDate'=> $now->getTimestamp(),
             'endDate'=> $timeLimit->getTimestamp(),
         );
-        $result = $this->get('AirlineFlightSchedules', $params)->AirlineFlightSchedulesResult->data;
+        $result = $this->get('AirlineFlightSchedules', $params)->AirlineFlightSchedulesResult;
         return $result;
     }
     public function getTailOwner($id){

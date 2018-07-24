@@ -6,29 +6,36 @@ class Controller {
 
     }
 
-    public function getArrivals($icao, $pagination = -1){
+    public function getArrivals($icao){
 
         $limit = 100;
-        $offset = $pagination ? $pagination*100 : 0;
-
-        $r= 0;
-        $rf=0;
-        $resFiltered = array();
+        $offset = 0;
 
         $flightsClient = new flightsClient();
         $res = $flightsClient->getEnroute($icao, $limit, $offset);
         $airport = $flightsClient->getAirportInfo($icao);
         $metar = $flightsClient->getMetarEx($icao);
 
+        $allFlights = array();
+
+
+
         if($res->enroute){
-            $r = count($res->enroute);
             $resFiltered = $this->filterByTimeFrame($res->enroute);
-            $rf = count($resFiltered);
+            $resWithAirline = $this->prepareArrivalFlights($resFiltered);
+            $allFlights = array_merge($allFlights, $resWithAirline);
         }
 
-        if($pagination == 0 && ($r + $rf) < 100){
-            $pagination = -1;
+        $c=0;
+        while( $res->next_offset > 0 && $c < 15 ) {
+            $c++;
+            $offset = $offset + 100;
+            $res = $flightsClient->getEnroute($icao, $limit, $offset);
+            $resFilteredToAdd = $this->filterByTimeFrame($res->enroute);
+            $resWithAirlineToAdd = $this->prepareArrivalFlights($resFilteredToAdd);
+            $allFlights = array_merge($allFlights, $resWithAirlineToAdd);
         }
+
 
         $data = array(
             'heading' => 'Arrivals to '.$airport->name,
@@ -38,17 +45,19 @@ class Controller {
                 'long'=>$airport->longitude,
                 'lat'=>$airport->latitude
             ),
-            'flights' => array(),
+            'flights' => $allFlights,
             'pagination'=> $pagination,
             'labels'=> array('Flight ID','Planned Arrival Time', 'Filed Departed Time', 'Airline'),
         );
 
+        return $data;
+    }
 
-        if($resFiltered){
+    private function prepareArrivalFlights($enroute){
             $flights = array();
             $idents = array();
 
-            foreach($resFiltered as $f){
+            foreach($enroute as $f){
 
 
                 $flight = (object)[
@@ -63,35 +72,40 @@ class Controller {
                 $idents[]= $f->ident;
             }
 
+            $flightsClient = new flightsClient();
+
             $owners = $flightsClient->getTailOwnersMulti($idents);
 
             foreach($flights as $i => $f){
                 $f->owner = $owners[$i]->TailOwnerResult;
             }
 
-            $data['flights'] = $flights;
-        }
-
-        return $data;
+            return $flights;
     }
 
-    public function getDepartures($icao, $pagination = -1){
+    public function getDepartures($icao){
 
-        $limit = 300;
-        $offset = $pagination ? $pagination*300 : 0;
-
-        $r= 0;
-        $rf=0;
-        $resFiltered = array();
+        $limit = 100;
+        $offset = 0;
+        $allFlights = array();
 
         $flightsClient = new flightsClient();
         $res = $flightsClient->getAirlineFlightSchedules($icao, $limit, $offset);
+
         $airport = $flightsClient->getAirportInfo($icao);
         $metar = $flightsClient->getMetarEx($icao);
+        $resWithFlights = $this->prepareDepartureFlights($res->data, $airport);
 
+        $allFlights = array_merge($allFlights, $resWithFlights);
 
-        if($pagination == 0 && ($r + $rf) < 300){
-            $pagination = -1;
+        $c=0;
+        while( $res->next_offset > 0 && $c < 15 ) {
+            $c++;
+            $offset = $offset + 100;
+            $res = $flightsClient->getAirlineFlightSchedules($icao, $limit, $offset);;
+            $resFilteredToAdd = $this->filterByTimeFrame($res->data);
+            $resWithAirlineToAdd = $this->prepareDepartureFlights($resFilteredToAdd, $airport);
+            $allFlights = array_merge($allFlights, $resWithAirlineToAdd);
         }
 
         $data = array(
@@ -102,16 +116,19 @@ class Controller {
                 'long'=>$airport->longitude,
                 'lat'=>$airport->latitude
             ),
-            'flights' => array(),
-            'pagination'=> $pagination,
+            'flights' => $allFlights,
             'labels'=> array('Flight ID','Planned Arrival Time', 'Planned Departure Time', 'Airline'),
         );
 
 
-        if($res){
+        return $data;
+    }
+
+    private function prepareDepartureFlights($res, $airport){
             $flights = array();
             $idents = array();
             $icaos = array();
+            $flightsClient = new flightsClient();
 
             foreach($res as $f){
 
@@ -132,20 +149,22 @@ class Controller {
             $owners = $flightsClient->getTailOwnersMulti($idents);
             $airports = $flightsClient->getAirportInfosMulti($icaos);
 
-//            echo '<pre>';
-//            var_dump($airports);
-//            echo '</pre>';
-
             foreach($flights as $i => $f){
                 $f->owner = $owners[$i]->TailOwnerResult;
                 $f->destination = $airports[$i]->AirportInfoResult->name;
                 $f->destinationName = $airports[$i]->AirportInfoResult->location;
             }
 
-            $data['flights'] = $flights;
-        }
+            usort($flights, function($a, $b)
+            {
+                $date1 = $a->dep;
+                $date2 = $b->dep;
+                if ($date1 < $date2) return -1;
+                if ($date1 == $date2) return 0;
+                if ($date1 > $date2) return 1;
+            });
 
-        return $data;
+            return $flights;
     }
 
     private function formatDates($timestamp){
@@ -165,7 +184,12 @@ class Controller {
 
         foreach($arr as $f){
             $ts = new DateTime();
-            $ts = $ts->setTimestamp($f->estimatedarrivaltime);
+            if(property_exists($f, 'estimatedarrivaltime')){
+                $flightTS = $f->estimatedarrivaltime;
+            } else {
+                $flightTS = $f->departuretime;
+            }
+            $ts = $ts->setTimestamp($flightTS);
             if($ts > $now && $ts < $timeLimit) {
                 $data[]= $f;
             }
@@ -173,14 +197,4 @@ class Controller {
         return $data;
     }
 
-    public function getPageQueryString($string, $mode = 'next'){
-        $query = array();
-        parse_str($string, $query);
-        if($mode == 'next'){
-            $query['pagination'] = $query['pagination'] + 1 ;
-        } else {
-            $query['pagination'] = $query['pagination'] - 1;
-        }
-        return http_build_query($query);
-    }
 }

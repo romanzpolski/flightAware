@@ -15,9 +15,9 @@ if($_GET){
     switch ($request_uri[0]) {
         case '/results':
             if($_GET['mode'] == 'arrivals'){
-                $data = $Controller->getArrivals($_GET['icao'], $_GET['pagination']);
+                $data = $Controller->getArrivals($_GET['icao']);
             } else {
-                $data = $Controller->getDepartures($_GET['icao'], $_GET['pagination']);
+                $data = $Controller->getDepartures($_GET['icao']);
             }
             include_once ('views/results.php');
             break;
