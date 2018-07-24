@@ -6,3 +6,5 @@
 - api calls pagination and bulk asynchronous CURL call
 - ready to go on Apache shared host
 - no frameworks
+
+https://uk.flightaware.com/commercial/flightxml/documentation2.rvt
