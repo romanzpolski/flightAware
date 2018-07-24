@@ -17,7 +17,7 @@
             </div>
             <div class="col-sm-4"></div>
             <div class="col-sm-4 text-right">
-                <?php if($data['pagination'] >= 0 && count($data['flights']) == 100){ ?>
+                <?php if($data['pagination'] >= 0){ ?>
                     <div class="page-item">
                         <a class="page-link btn btn-default" href="results?<?php echo $Controller->getPageQueryString($_SERVER['QUERY_STRING'], 'next'); ?>" aria-label="Next">
                             <span aria-hidden="true">Next &raquo;</span>

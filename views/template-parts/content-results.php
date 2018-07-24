@@ -15,12 +15,19 @@
             <script>
                 var map;
                 function initMap() {
+                    var LatLng = {lat: <?php echo $data['airport']['lat']; ?>, lng: <?php echo $data['airport']['long']; ?>};
                     map = new google.maps.Map(document.getElementById('map'), {
-                        center: {lat: <?php echo $data['airport']['lat']; ?>, lng: <?php echo $data['airport']['long']; ?>},
+                        center: LatLng,
                         zoom: 8,
                         disableDefaultUI: true,
                         zoomControl: false,
                         scaleControl: true
+                    });
+
+                    var marker = new google.maps.Marker({
+                        position: LatLng,
+                        map: map,
+                        title: '<?php echo $data['airport']['name']; ?>'
                     });
                 }
             </script>
