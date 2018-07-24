@@ -8,8 +8,8 @@ class Controller {
 
     public function getArrivals($icao, $pagination = -1){
 
-        $limit = 200;
-        $offset = $pagination ? $pagination*200 : 0;
+        $limit = 100;
+        $offset = $pagination ? $pagination*100 : 0;
 
         $r= 0;
         $rf=0;
@@ -26,7 +26,7 @@ class Controller {
             $rf = count($resFiltered);
         }
 
-        if($pagination == 0 && ($r + $rf) < 200){
+        if($pagination == 0 && ($r + $rf) < 100){
             $pagination = -1;
         }
 
@@ -77,8 +77,8 @@ class Controller {
 
     public function getDepartures($icao, $pagination = -1){
 
-        $limit = 200;
-        $offset = $pagination ? $pagination*200 : 0;
+        $limit = 300;
+        $offset = $pagination ? $pagination*300 : 0;
 
         $r= 0;
         $rf=0;
@@ -90,7 +90,7 @@ class Controller {
         $metar = $flightsClient->getMetarEx($icao);
 
 
-        if($pagination == 0 && ($r + $rf) < 200){
+        if($pagination == 0 && ($r + $rf) < 300){
             $pagination = -1;
         }
 
