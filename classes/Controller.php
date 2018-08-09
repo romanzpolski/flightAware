@@ -46,7 +46,6 @@ class Controller {
                 'lat'=>$airport->latitude
             ),
             'flights' => $allFlights,
-            'pagination'=> $pagination,
             'labels'=> array('Flight ID','Planned Arrival Time', 'Filed Departed Time', 'Airline'),
         );
 
@@ -58,7 +57,6 @@ class Controller {
             $idents = array();
 
             foreach($enroute as $f){
-
 
                 $flight = (object)[
                     'id'=> $f->ident,
